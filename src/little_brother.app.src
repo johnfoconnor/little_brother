@@ -1,0 +1,17 @@
+{application, little_brother,
+ [
+  {id, "Little Brother"},
+  {description, "monitoring service"},
+  {sub_description, "used to collect statistics from a erlang app"},
+  {vsn, "0.0.1"},
+  % The following line is overwritten by the Makefile
+  {modules, []},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  folsom
+                 ]},
+  {mod, {little_brother_app, []}},
+  {env, []}
+ ]}.
