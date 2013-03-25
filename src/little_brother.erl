@@ -8,7 +8,8 @@
         increment_metric/1,
         decrement_metric/1,
         set_metric/1,
-        dump_metrics/0
+        dump_metrics/0,
+        print_metrics/0
     ]).
 
 %% [{Metric_Name, Metric_type, Initial_value}]
@@ -45,16 +46,23 @@ get_metrics() ->
 get_metric_value(Name) ->
     folsom_metrics:get_metric_value(Name).
 
+print_metrics() ->
+    io:format("~p", [lists:flatten(dump_metrics())]).
+print_metrics([]) ->
+    ok;
+print_metrics([{Name,Value}|Metrics]) ->
+    io:format("~p => ~p~n", [Name, Value]),
+    print_metrics(Metrics).
+
 
 dump_metrics() ->
-    io:format("'Metric Name' => 'Metric Value'~n"), 
-    dump_metrics(get_metrics()).
+    dump_metrics(get_metrics(), "").
 
-dump_metrics([]) ->
-    ok;
-dump_metrics([Name|Names]) ->
-    io:format("    '~p' => '~p'~n", [Name, get_metric_value(Name)]),
-    dump_metrics(Names).
+dump_metrics([], Output) ->
+    Output;
+dump_metrics([Name|Names], Output) ->
+    Output1 = [{Name, get_metric_value(Name)}|Output],
+    dump_metrics(Names, Output1).
 
 
 init_metric([{Name, Type, Init}|Metrics]) ->
