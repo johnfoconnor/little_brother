@@ -10,7 +10,8 @@
   {applications, [
                   kernel,
                   stdlib,
-                  folsom
+                  folsom,
+                  cowboy
                  ]},
   {mod, {little_brother_app, []}},
   {env, []}
