@@ -37,7 +37,7 @@ init({MetricSpec, TagSpec}) ->
         ok ->
             init_tags(TagSpec);
         Error ->
-            io:format("init error~n"),
+            io:format("init error:~p~n", [Error]),
             Error
     end.
 
@@ -52,17 +52,38 @@ init_tags([{Tag, Names}|TagSpecs]) ->
             Error
     end.
 
+tag_metrics(Names, Tag) ->
+    Res = lists:map(fun(Name) -> 
+                  case tag_metric(Name, Tag) of
+                      ok -> 
+                          ok;
+                      Error ->
+                          io:format("error ~p tagging metric from spec ~p~n", [Error, {Name, Tag}]),
+                          Error
+                  end
+              end,
+              Names),
+    lists:foldl(fun(Elem, Res) -> 
+                case Elem of  
+                    ok ->
+                        Res;
+                    Error ->
+                        Error
+                end
+        end,
+        ok, Res).
 
-tag_metrics([], _Tag) ->
-    ok;
-tag_metrics([Name|Names], Tag) ->
-    case tag_metric(Name, Tag) of
-        ok -> 
-            tag_metrics(Names, Tag);
-        Error ->
-            io:format("error ~p tagging metric from spec ~p~n", [Error, {Name, Tag}]),
-            Error
-    end.
+
+%%tag_metrics([], _Tag) ->
+%%    ok;
+%%tag_metrics([Name|Names], Tag) ->
+%%    case tag_metric(Name, Tag) of
+%%        ok -> 
+%%            tag_metrics(Names, Tag);
+%%        Error ->
+%%            io:format("error ~p tagging metric from spec ~p~n", [Error, {Name, Tag}]),
+%%            Error
+%%    end.
 
 
 init_metrics([{Name, Type, TypeSpec}|Metrics]) ->
@@ -74,7 +95,7 @@ init_metrics([{Name, Type, TypeSpec}|Metrics]) ->
             Error
     end;
 init_metrics([{Name, Type}|Metrics]) ->
-    init_metrics([{Name, Type, []}, Metrics]);
+    init_metrics([{Name, Type, []}|Metrics]);
 init_metrics([]) ->
     ok;
 init_metrics(_Metrics) ->
