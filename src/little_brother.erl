@@ -1,35 +1,30 @@
 -module(little_brother).
 
--export([start/1,
+-export([start/0,
+        start/1,
         notify_metric/1,
-        increment_metric/1,
-        decrement_metric/1,
-        set_metric/1,
         dump_metrics/0,
-        print_metrics/0
+        print_metrics/0,
+        print_metrics/1
     ]).
 
 
 % Public API
 
-%% [{Metric_Name, Metric_type, Initial_value}]
-start(Metrics) ->
-    Ret = start(),
-    lb_adapter:init_metrics(Metrics),
+start() ->
+    io:format("starting without any metrics to track, not very useful. Try start/1~n"),
+    launch().
+
+% 
+% {[{MetricName, MetricType, TypeSpec}],
+%  [{Tag, MetricNames}]}
+start(Spec) ->
+    Ret = launch(),
+    lb_adapter:init(Spec),
     Ret.
 
-
 notify_metric(Metric) ->
-    lb_adpater:notify_metric(Metric).
-
-increment_metric(Metric) ->
-    lb_adpater:increment_metric(Metric).
-
-decrement_metric(Metric) ->
-    lb_adpater:decrement_metric(Metric).
-
-set_metric(Metric) ->
-    lb_adapter:set_metric(Metric).
+    lb_adapter:notify_metric(Metric).
 
 dump_metrics() ->
     lb_adapter:dump_metrics().
@@ -37,11 +32,14 @@ dump_metrics() ->
 print_metrics() ->
     lb_adapter:print_metrics().
 
+print_metrics(Tag) ->
+    lb_adapter:get_tagged_metrics(Tag).
+
 
 
 % Private
 
-start() ->
+launch() ->
     start_cowboy(),
     lb_adapter:start(),
     application:start(little_brother).
