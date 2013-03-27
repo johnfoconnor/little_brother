@@ -2,14 +2,10 @@
 
 -export([start/0,
         init/1,
-        new_histogram/1,
-        new_metric/3,
         tag_metric/2,
         untag_metric/2,
-        notify_metric/1,
-        increment_metric/1,
-        decrement_metric/1,
-        adjust_metric/3,
+        safe_update_metric/2,
+        update_metric/1,
         get_metrics/0,
         get_metric_value/1,
         get_tagged_metrics/1,
@@ -18,7 +14,6 @@
         print_metrics/0
     ]).
 
--type metric() :: counter | gauge.
 -define(DEFAULT_LIMIT, 5).
 -define(DEFAULT_SIZE, 1028). % mimic codahale's metrics
 -define(DEFAULT_SLIDING_WINDOW, 60). % sixty second sliding window
@@ -63,10 +58,10 @@ tag_metrics(Names, Tag) ->
                   end
               end,
               Names),
-    lists:foldl(fun(Elem, Res) -> 
+    lists:foldl(fun(Elem, Res1) -> 
                 case Elem of  
                     ok ->
-                        Res;
+                        Res1;
                     Error ->
                         Error
                 end
@@ -155,6 +150,15 @@ get_metrics() ->
 get_metric_value(Name) ->
     folsom_metrics:get_metric_value(Name).
 
+get_metric_type(Name) ->
+    case folsom_metric:get_info(Name) of 
+        {Name, {type, Type}} ->
+            {ok, Type};
+        {error, Name, Msg} ->
+            {error, Msg};
+        _ ->
+            {error, badarg}
+    end.
 
 % tagging metrics
 
@@ -164,6 +168,16 @@ get_tagged_metrics(Tag, Type) ->
 get_tagged_metrics(Tag) ->
     folsom_metrics:get_metrics_value(Tag).
 
+update_metric_tags(_Name, [], _Func) -> 
+    ok;
+update_metric_tags(Name, Tags, Func) when is_list(Tags) ->
+    [Tag|Rest] = Tags,
+    update_metric_tag(Name, Tag, Func),
+    update_metric_tags(Name, Rest, Func).
+
+update_metric_tag(Name, Tag, Func) ->
+    Func(Name, Tag).
+
 tag_metric(Name, Tag) ->
     folsom_metrics:tag_metric(Name, Tag).
 
@@ -171,19 +185,34 @@ untag_metric(Name, Tag) ->
     folsom_metrics:untag_metric(Name, Tag).
 
 % modify metrics
+safe_update_metric(Name, Tags) ->
+    safe_increment_metric(Name, Tags, 1).
 
-notify_metric({Name, Args}) ->
+safe_increment_metric(Name, Tags, Amt) ->
+    case folsom_metrics:metric_exists(Name) of
+        false ->
+            create_new_metric(meter, Name);
+        true ->
+            ok
+    end,
+    update_metric_tags(Name, Tags, fun tag_metric/2),
+    increment_metric(Name, Amt).
+
+increment_metric(Name, Amt) -> 
+    case get_metric_type(Name) of
+        {ok, Type} ->
+            case Type of
+                meter ->
+                    update_metric({Name, Amt});
+                counter -> 
+                    update_metric({Name, {inc, Amt}});
+                _ ->
+                    ok
+            end;
+        {error, _Reason} ->
+            ok
+    end.
+
+update_metric({Name, Args}) ->
    folsom_metrics:notify({Name, Args}).
 
-increment_metric({Name, Amt}) -> 
-    adjust_metric(Name, Amt, inc);
-increment_metric(Name) -> 
-    increment_metric({Name, 1}).
-
-decrement_metric({Name, Amt}) -> 
-    adjust_metric(Name, Amt, dec);
-decrement_metric(Name) -> 
-    decrement_metric({Name, 1}).
-
-adjust_metric(Name, Amt, Type) -> 
-    notify_metric({Name, {Type, Amt}}).

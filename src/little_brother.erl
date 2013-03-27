@@ -2,7 +2,8 @@
 
 -export([start/0,
         start/1,
-        notify_metric/1,
+        update_metric/2,
+        update_metric/1,
         dump_metrics/0,
         dump_metrics/1,
         print_metrics/0
@@ -23,8 +24,11 @@ start(Spec) ->
     lb_adapter:init(Spec),
     Ret.
 
-notify_metric(Metric) ->
-    lb_adapter:notify_metric(Metric).
+update_metric(Name, Tags) ->
+    lb_adapter:safe_update_metric(Name, Tags).
+
+update_metric(Name) ->
+    update_metric(Name, []).
 
 dump_metrics() ->
     lb_adapter:dump_metrics().
