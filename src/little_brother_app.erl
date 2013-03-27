@@ -20,7 +20,7 @@ stop(_State) ->
 
 init_cowboy() ->
     Dispatch = cowboy_router:compile([
-            {'_', [{'_', web_handler, []}]}
+            {'_', [{"/[...]", web_handler, []}]}
     ]),
     {ok, _} = cowboy:start_http(http_listener, 100, [{port, 8080}], [
             {env, [{dispatch, Dispatch}]}

@@ -4,8 +4,8 @@
         start/1,
         notify_metric/1,
         dump_metrics/0,
-        print_metrics/0,
-        print_metrics/1
+        dump_metrics/1,
+        print_metrics/0
     ]).
 
 
@@ -29,11 +29,12 @@ notify_metric(Metric) ->
 dump_metrics() ->
     lb_adapter:dump_metrics().
 
+dump_metrics(Tag) ->
+    lb_adapter:get_tagged_metrics(Tag).
+
 print_metrics() ->
     lb_adapter:print_metrics().
 
-print_metrics(Tag) ->
-    lb_adapter:get_tagged_metrics(Tag).
 
 
 
